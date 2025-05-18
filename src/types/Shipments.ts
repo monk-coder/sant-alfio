@@ -2,14 +2,14 @@ import type {Product} from "./Products.ts";
 
 export interface Shipment {
     id: number;
-    type: string;
-    product: Product,
+    operation_type: string;
+    product_id: Product,
     quantity: number;
-    date: Date;
+    operation_date: Date;
 }
 
 export interface ShipmentDetails extends Shipment {
-    user: string,
+    user_id: string,
     comment: string;
 }
 

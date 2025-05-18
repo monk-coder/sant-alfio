@@ -9,24 +9,26 @@ import Loader from "@components/UI/loader";
 import styles from "./Operations.module.css";
 import type {Operation} from "../../types/Operations.ts";
 import dayjs from "dayjs";
+import {useApi} from "@utils/api.ts";
 
 
 export const Operations: React.FC = (): React.ReactElement => {
     const {user, isLoading, setIsLoading} = useContext(AuthContext) as AuthContextType
     const navigate = useNavigate();
+    const { fetchWithAuth } = useApi();
 
     const [filters, setFilters] = useState<Filter[]>([]);
     const [operationTypes, setOperationTypes] = useState<FilterOption[]>([])
     const [operationFetchUrl, setOperationsFetchUrl] = useState<string>("")
     const [operations, setOperations] = useState<Operation[]>([])
+    const [searchQuery, setSearchQuery] = useState<string>("")
 
     const fetchOperationTypes = async () => {
         try {
-            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/operation-types`, {
+            const response = await fetchWithAuth(`${import.meta.env.VITE_BACKEND_URL}/operation-types`, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${user.token}`
                 }
             })
 
@@ -75,7 +77,7 @@ export const Operations: React.FC = (): React.ReactElement => {
         setFilters(filters);
     }, []);
 
-    const buildFetchUrl = async () => {
+    const buildFetchUrl = () => {
         const params: string[] = [];
 
         filters.forEach(filter => {
@@ -83,6 +85,11 @@ export const Operations: React.FC = (): React.ReactElement => {
                 params.push(`${encodeURIComponent(filter.paramName)}=${encodeURIComponent(filter.state.value)}`);
             }
         });
+
+        // Add search query if it exists
+        if (searchQuery && searchQuery.trim() !== '') {
+            params.push(`search=${encodeURIComponent(searchQuery.trim())}`);
+        }
 
         setOperationsFetchUrl(`${import.meta.env.VITE_BACKEND_URL}/operations${params.length > 0 ? "?" : ""}${params.join('&')}`)
     }
@@ -95,11 +102,10 @@ export const Operations: React.FC = (): React.ReactElement => {
         setIsLoading(true)
 
         try {
-            const response: Response = await fetch(operationFetchUrl, {
+            const response: Response = await fetchWithAuth(operationFetchUrl, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${user.token}`
                 }
             })
 
@@ -120,6 +126,11 @@ export const Operations: React.FC = (): React.ReactElement => {
         navigate(`/operations/${operationId}`);
     };
 
+    const handleSearchChange = (value: string) => {
+        setSearchQuery(value);
+        // URL rebuild and data fetch will be handled by useEffect hooks
+    };
+
     const handleFilterChange = (filterTitle: string, value: string | number) => {
         const updatedFilters = filters.map(filter => {
             if (filter.title === filterTitle) {
@@ -135,13 +146,24 @@ export const Operations: React.FC = (): React.ReactElement => {
         });
 
         setFilters(updatedFilters);
-        buildFetchUrl();
-        fetchData();
+        // URL rebuild and data fetch will be handled by useEffect hooks
     };
 
+    // Rebuild URL when filters or search query change
     useEffect(() => {
-        buildFetchUrl()
-        fetchData()
+        buildFetchUrl();
+    }, [filters, searchQuery]);
+
+    // Fetch data when URL changes
+    useEffect(() => {
+        if (operationFetchUrl) {
+            fetchData();
+        }
+    }, [operationFetchUrl]);
+
+    // Initial fetch
+    useEffect(() => {
+        buildFetchUrl();
     }, []);
 
     return(
@@ -155,34 +177,36 @@ export const Operations: React.FC = (): React.ReactElement => {
             <div className={styles.pageContent}>
                 <FiltersAndSearchBar
                     filters={filters}
-                    onSearch={fetchData}
+                    onSearch={handleSearchChange}
                     onFilterChange={handleFilterChange}
                 />
-                <table className={styles.valuesTable}>
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Тип</th>
-                            <th>Дата</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {
-                            operations.map((item: Operation, index: number) => (
-                                <tr
-                                    className={styles.valuesTableRow}
-                                    key={index}
-                                    onClick={() => handleRowClick(item.id)}
-                                    style={{ cursor: 'pointer' }}
-                                >
-                                    <td className={styles.valuesTableCell}>{item.id}</td>
-                                    <td className={styles.valuesTableCell}>{item.type}</td>
-                                    <td className={styles.valuesTableCell}>{dayjs(item.date).format("DD-MM-YYYY")}</td>
-                                </tr>
-                            ))
-                        }
-                    </tbody>
-                </table>
+                <div className={styles.tableContainer}>
+                    <table className={styles.valuesTable}>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Тип</th>
+                                <th>Дата</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {
+                                operations.map((item: Operation, index: number) => (
+                                    <tr
+                                        className={styles.valuesTableRow}
+                                        key={index}
+                                        onClick={() => handleRowClick(item.id)}
+                                        style={{ cursor: 'pointer' }}
+                                    >
+                                        <td className={styles.valuesTableCell}>{item.id}</td>
+                                        <td className={styles.valuesTableCell}>{item.type}</td>
+                                        <td className={styles.valuesTableCell}>{dayjs(item.date).format("DD-MM-YYYY")}</td>
+                                    </tr>
+                                ))
+                            }
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     )

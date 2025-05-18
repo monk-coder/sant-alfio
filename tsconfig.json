@@ -9,7 +9,7 @@
       "@pages/*": ["pages/*"],
       "@context/*": ["context/*"],
       "@hooks/*": ["hooks/*"],
-      "@assets/*": ["assets/*"]
+      "@assets/*": ["assets/*"],
     }
   },
   "files": [],

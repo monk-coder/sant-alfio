@@ -9,47 +9,20 @@ import type {CategoriesResponse, LeftCountResponse, ProductsResponse} from "@typ
 import type {Category} from "@types/Categories.ts";
 import type {Product} from "@types/Products.ts";
 import Loader from "@components/UI/loader";
-
-const mockProducts: Product[] = [
-    {
-        id: 1,
-        name: "Product 1",
-        category: "Category 1",
-        inStockCount: 10,
-        units: "psc",
-    },
-    {
-        id: 2,
-        name: "Product 2",
-        category: "Category 2",
-        inStockCount: 10,
-        units: "psc",
-    },
-    {
-        id: 3,
-        name: "Product 3",
-        category: "Category 3",
-        inStockCount: 10,
-        units: "psc",
-    },
-    {
-        id: 4,
-        name: "Product 4",
-        category: "Category 4",
-        inStockCount: 10,
-        units: "psc",
-    },
-]
+import {useApi} from "@utils/api.ts";
 
 export const Products: React.FC = (): React.ReactElement => {
     const {user, isLoading, setIsLoading} = useContext(AuthContext) as AuthContextType
+
     const navigate = useNavigate();
+    const { fetchWithAuth } = useApi();
 
     const [filters, setFilters] = useState<Filter[]>([]);
     const [categories, setCategories] = useState<FilterOption[]>([])
     const [leftCounts, setLeftCounts] = useState<FilterOption[]>([])
     const [productFetchUrl, setProductFetchUrl] = useState<string>("")
     const [products, setProducts] = useState<Product[]>([])
+    const [searchQuery, setSearchQuery] = useState<string>("")
 
     const availabilityTypes: FilterOption[] = [
         {
@@ -67,45 +40,37 @@ export const Products: React.FC = (): React.ReactElement => {
     ];
 
     const fetchCategories = async () => {
-        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/categories`, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${user.token}`
+        try {
+            const response = await fetchWithAuth(`${import.meta.env.VITE_BACKEND_URL}/categories/`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                }
+            })
+
+            if (!response.ok) {
+                throw new Error("Failed to fetch categories")
             }
-        })
 
-        if (!response.ok) {
-            console.error("Failed to fetch categories")
-            return
+            const data: CategoriesResponse = await response.json()
+            const categories: FilterOption = data.map((category: Category): FilterOption => ({
+                value: category.id,
+                label: category.name
+            }))
+            setCategories(categories)
+        } catch (e) {
+            console.error(e)
+        } finally {
+            setIsLoading(false)
         }
-
-        const data: CategoriesResponse = await response.json()
-        const categories: FilterOption = data.data.map((category: Category): FilterOption => ({
-            value: category.id,
-            label: category.name
-        }))
-        setCategories(categories)
     }
 
     const fetchLeftCounts = async () => {
-        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/categories`, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${user.token}`
-            }
-        })
+        const uniqueCounts = [...new Set(products.map(product => product.current_quantity))]
 
-        if (!response.ok) {
-            console.error("Failed to fetch minimum in-stock counts")
-            return
-        }
-
-        const data: LeftCountResponse = await response.json()
-        const leftCounts: FilterOption = data.data.map((leftAmount: number): FilterOption => ({
-            value: leftAmount,
-            label: leftAmount
+        const leftCounts: FilterOption[] = uniqueCounts.map((count): FilterOption => ({
+            value: count,
+            label: count
         }))
 
         setLeftCounts(leftCounts)
@@ -113,7 +78,6 @@ export const Products: React.FC = (): React.ReactElement => {
 
     useEffect(() => {
         fetchCategories()
-        fetchLeftCounts()
 
         const filters: Filter[] = [
             {
@@ -134,9 +98,9 @@ export const Products: React.FC = (): React.ReactElement => {
         ]
 
         setFilters(filters);
-    }, []);
+    }, [leftCounts]);
 
-    const buildFetchUrl = async () => {
+    const buildFetchUrl = () => {
         const params: string[] = [];
 
         filters.forEach(filter => {
@@ -145,6 +109,11 @@ export const Products: React.FC = (): React.ReactElement => {
             }
         });
 
+        // Add search query if it exists
+        if (searchQuery && searchQuery.trim() !== '') {
+            params.push(`search=${encodeURIComponent(searchQuery.trim())}`);
+        }
+
         setProductFetchUrl(`${import.meta.env.VITE_BACKEND_URL}/products${params.length > 0 ? "?" : ""}${params.join('&')}`)
     }
 
@@ -152,34 +121,66 @@ export const Products: React.FC = (): React.ReactElement => {
         if (isLoading) {
             return
         }
-
         setIsLoading(true)
-        // const response: Response = await fetch(productFetchUrl, {
-        //     method: "GET",
-        //     headers: {
-        //         "Content-Type": "application/json",
-        //         "Authorization": `Bearer ${user.token}`
-        //     }
-        // })
-        //
-        // if (!response.ok) {
-        //     console.error("Failed to fetch minimum in-stock counts")
-        //     return
-        // }
-        //
-        // const data: ProductsResponse = await response.json()
-        // setProducts(data.data)
-        setProducts(mockProducts)
-        setIsLoading(false)
+
+        try {
+            const response: Response = await fetchWithAuth(productFetchUrl, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                }
+            })
+
+            if (!response.ok) {
+                console.error("Failed to fetch minimum in-stock counts")
+                return
+            }
+
+            const data: ProductsResponse = await response.json()
+            setProducts(data)
+            await fetchLeftCounts()
+        } catch (e) {
+            console.error(e)
+        } finally {
+            setIsLoading(false)
+        }
     }
 
     const handleRowClick = (productId: number) => {
         navigate(`/products/${productId}`);
     };
 
+    const handleSearchChange = (value: string) => {
+        setSearchQuery(value);
+    };
+
+    const handleFilterChange = (filterTitle: string, value: string | number) => {
+        const updatedFilters = filters.map(filter => {
+            if (filter.title === filterTitle) {
+                const selectedOption = filter.options.find(option => option.value === value);
+                return {
+                    ...filter,
+                    state: selectedOption || { value, label: value.toString() }
+                };
+            }
+            return filter;
+        });
+
+        setFilters(updatedFilters);
+    };
+
     useEffect(() => {
-        buildFetchUrl()
-        fetchData()
+        buildFetchUrl();
+    }, [filters, searchQuery]);
+
+    useEffect(() => {
+        if (productFetchUrl) {
+            fetchData();
+        }
+    }, [productFetchUrl]);
+
+    useEffect(() => {
+        buildFetchUrl();
     }, []);
 
     return(
@@ -193,34 +194,36 @@ export const Products: React.FC = (): React.ReactElement => {
             <div className={styles.pageContent}>
                 <FiltersAndSearchBar
                     filters={filters}
-                    onSearch={fetchData}
-                    onFilterChange={fetchData}
+                    onSearch={handleSearchChange}
+                    onFilterChange={handleFilterChange}
                 />
-                <table className={styles.valuesTable}>
-                    <thead>
-                        <tr>
-                            <th>Наименование</th>
-                            <th>Категория</th>
-                            <th>Остаток</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {
-                            products.map((item: Product, index) => (
-                                <tr
-                                    className={styles.valuesTableRow}
-                                    key={index}
-                                    onClick={() => handleRowClick(item.id)}
-                                    style={{ cursor: 'pointer' }}
-                                >
-                                    <td className={styles.valuesTableCell}>{item.name}</td>
-                                    <td className={styles.valuesTableCell}>{item.category}</td>
-                                    <td className={styles.valuesTableCell}>{`${item.inStockCount} (${item.units})`}</td>
-                                </tr>
-                            ))
-                        }
-                    </tbody>
-                </table>
+                <div className={styles.tableContainer}>
+                    <table className={styles.valuesTable}>
+                        <thead>
+                            <tr>
+                                <th>Наименование</th>
+                                <th>Категория</th>
+                                <th>Остаток</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {
+                                products.map((item: Product, index) => (
+                                    <tr
+                                        className={styles.valuesTableRow}
+                                        key={index}
+                                        onClick={() => handleRowClick(item.id)}
+                                        style={{ cursor: 'pointer' }}
+                                    >
+                                        <td className={styles.valuesTableCell}>{item.name}</td>
+                                        <td className={styles.valuesTableCell}>{item.category_id.name}</td>
+                                        <td className={styles.valuesTableCell}>{item.current_quantity}</td>
+                                    </tr>
+                                ))
+                            }
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     )

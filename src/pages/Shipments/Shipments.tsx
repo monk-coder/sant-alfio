@@ -10,24 +10,26 @@ import styles from "./Shipments.module.css";
 import type {Shipment} from "../../types/Shipments.ts";
 import type {ShipmentTypesResponse} from "../../types/Responses.ts";
 import dayjs from "dayjs";
+import {useApi} from "@utils/api.ts";
 
 
 export const Shipments: React.FC = (): React.ReactElement => {
     const {user, isLoading, setIsLoading} = useContext(AuthContext) as AuthContextType
     const navigate = useNavigate();
+    const { fetchWithAuth } = useApi();
 
     const [filters, setFilters] = useState<Filter[]>([]);
     const [shipmentTypes, setShipmentTypes] = useState<FilterOption[]>([])
     const [shipmentFetchUrl, setShipmentsFetchUrl] = useState<string>("")
     const [shipments, setShipments] = useState<Shipment[]>([])
+    const [searchQuery, setSearchQuery] = useState<string>("")
 
     const fetchShipmentTypes = async () => {
         try {
-            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/shipment-types`, {
+            const response = await fetchWithAuth(`${import.meta.env.VITE_BACKEND_URL}/shipment-types`, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${user.token}`
                 }
             })
 
@@ -36,7 +38,7 @@ export const Shipments: React.FC = (): React.ReactElement => {
             }
 
             const data: ShipmentTypesResponse = await response.json()
-            const shipmentTypes: FilterOption = data.data.map((shipmentType: string): FilterOption => ({
+            const shipmentTypes: FilterOption = data.map((shipmentType: string): FilterOption => ({
                 value: shipmentType,
                 label: shipmentType
             }))
@@ -76,7 +78,7 @@ export const Shipments: React.FC = (): React.ReactElement => {
         setFilters(filters);
     }, []);
 
-    const buildFetchUrl = async () => {
+    const buildFetchUrl = () => {
         const params: string[] = [];
 
         filters.forEach(filter => {
@@ -84,6 +86,11 @@ export const Shipments: React.FC = (): React.ReactElement => {
                 params.push(`${encodeURIComponent(filter.paramName)}=${encodeURIComponent(filter.state.value)}`);
             }
         });
+
+        // Add search query if it exists
+        if (searchQuery && searchQuery.trim() !== '') {
+            params.push(`search=${encodeURIComponent(searchQuery.trim())}`);
+        }
 
         setShipmentsFetchUrl(`${import.meta.env.VITE_BACKEND_URL}/shipments${params.length > 0 ? "?" : ""}${params.join('&')}`)
     }
@@ -96,11 +103,10 @@ export const Shipments: React.FC = (): React.ReactElement => {
         setIsLoading(true)
 
         try {
-            const response: Response = await fetch(shipmentFetchUrl, {
+            const response: Response = await fetchWithAuth(shipmentFetchUrl, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${user.token}`
                 }
             })
 
@@ -121,6 +127,11 @@ export const Shipments: React.FC = (): React.ReactElement => {
         navigate(`/shipments/${productId}`);
     };
 
+    const handleSearchChange = (value: string) => {
+        setSearchQuery(value);
+        // URL rebuild and data fetch will be handled by useEffect hooks
+    };
+
     const handleFilterChange = (filterTitle: string, value: string | number) => {
         const updatedFilters = filters.map(filter => {
             if (filter.title === filterTitle) {
@@ -136,13 +147,24 @@ export const Shipments: React.FC = (): React.ReactElement => {
         });
 
         setFilters(updatedFilters);
-        buildFetchUrl();
-        fetchData();
+        // URL rebuild and data fetch will be handled by useEffect hooks
     };
 
+    // Rebuild URL when filters or search query change
     useEffect(() => {
-        buildFetchUrl()
-        fetchData()
+        buildFetchUrl();
+    }, [filters, searchQuery]);
+
+    // Fetch data when URL changes
+    useEffect(() => {
+        if (shipmentFetchUrl) {
+            fetchData();
+        }
+    }, [shipmentFetchUrl]);
+
+    // Initial fetch
+    useEffect(() => {
+        buildFetchUrl();
     }, []);
 
     return(
@@ -156,36 +178,38 @@ export const Shipments: React.FC = (): React.ReactElement => {
             <div className={styles.pageContent}>
                 <FiltersAndSearchBar
                     filters={filters}
-                    onSearch={fetchData}
+                    onSearch={handleSearchChange}
                     onFilterChange={handleFilterChange}
                 />
-                <table className={styles.valuesTable}>
-                    <thead>
-                        <tr>
-                            <th>Тип</th>
-                            <th>Товар</th>
-                            <th>Кол-ва товара</th>
-                            <th>Дата</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {
-                            shipments.map((item: Shipment, index: number) => (
-                                <tr
-                                    className={styles.valuesTableRow}
-                                    key={index}
-                                    onClick={() => handleRowClick(item.id)}
-                                    style={{ cursor: 'pointer' }}
-                                >
-                                    <td className={styles.valuesTableCell}>{item.type}</td>
-                                    <td className={styles.valuesTableCell}>{item.product.name}</td>
-                                    <td className={styles.valuesTableCell}>{item.quantity}</td>
-                                    <td className={styles.valuesTableCell}>{dayjs(item.date).format("DD-MM-YYYY")}</td>
-                                </tr>
-                            ))
-                        }
-                    </tbody>
-                </table>
+                <div className={styles.tableContainer}>
+                    <table className={styles.valuesTable}>
+                        <thead>
+                            <tr>
+                                <th>Тип</th>
+                                <th>Товар</th>
+                                <th>Кол-ва товара</th>
+                                <th>Дата</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {
+                                shipments.map((item: Shipment, index: number) => (
+                                    <tr
+                                        className={styles.valuesTableRow}
+                                        key={index}
+                                        onClick={() => handleRowClick(item.id)}
+                                        style={{ cursor: 'pointer' }}
+                                    >
+                                        <td className={styles.valuesTableCell}>{item.type}</td>
+                                        <td className={styles.valuesTableCell}>{item.product.name}</td>
+                                        <td className={styles.valuesTableCell}>{item.quantity}</td>
+                                        <td className={styles.valuesTableCell}>{dayjs(item.date).format("DD-MM-YYYY")}</td>
+                                    </tr>
+                                ))
+                            }
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     )

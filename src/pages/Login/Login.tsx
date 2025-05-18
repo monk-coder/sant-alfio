@@ -1,8 +1,8 @@
 import * as React from "react";
-import { useState, useContext } from "react";
-import { useNavigate } from "react-router-dom";
-import { PasswordInput, TextInput } from "@ui/inputs/TextInput.tsx";
-import AuthContext, { type AuthContextType } from "@context/AuthContext";
+import {useState, useContext, useEffect} from "react";
+import {useNavigate} from "react-router-dom";
+import {PasswordInput, TextInput} from "@ui/inputs/TextInput.tsx";
+import AuthContext, {type AuthContextType} from "@context/AuthContext";
 import {SubmitButton} from "@ui/buttons/SubmitButton.tsx";
 import styles from "./Login.module.css";
 import Loader from "@components/UI/loader";
@@ -13,8 +13,14 @@ export const Login: React.FC = (): React.ReactElement => {
     const [error, setError] = useState<string>("");
     const [loading, setLoading] = useState<boolean>(false);
 
-    const { login }: AuthContextType = useContext(AuthContext);
+    const {login, user}: AuthContextType = useContext(AuthContext);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        if (user) {
+            navigate('/');
+        }
+    }, [user, navigate]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -47,7 +53,7 @@ export const Login: React.FC = (): React.ReactElement => {
         <div className={styles.loginPage}>
             {loading && (
                 <div className={styles.loaderContainer}>
-                    <Loader size="large" />
+                    <Loader size="large"/>
                 </div>
             )}
             <div className={styles.loginFormContainer}>

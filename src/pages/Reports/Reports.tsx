@@ -7,17 +7,20 @@ import AuthContext, {type AuthContextType} from "@context/AuthContext.tsx";
 import type {ReportsResponse} from "@types/Responses.ts";
 import Loader from "@components/UI/loader";
 import styles from "./Reports.module.css";
-import type {Report} from "../../types/Reports.ts";
+import type {Report} from "@types/Reports.ts";
 import dayjs from "dayjs";
+import { useApi } from "@utils/api";
 
 
 export const Reports: React.FC = (): React.ReactElement => {
-    const {user, isLoading, setIsLoading} = useContext(AuthContext) as AuthContextType
+    const {isLoading, setIsLoading} = useContext(AuthContext) as AuthContextType
     const navigate = useNavigate();
+    const { fetchWithAuth } = useApi();
 
     const [filters, setFilters] = useState<Filter[]>([]);
     const [reportFetchUrl, setReportFetchUrl] = useState<string>("")
     const [reports, setReports] = useState<Report[]>([])
+    const [searchQuery, setSearchQuery] = useState<string>("")
 
     useEffect(() => {
         const filters: Filter[] = [
@@ -38,7 +41,7 @@ export const Reports: React.FC = (): React.ReactElement => {
         setFilters(filters);
     }, []);
 
-    const buildFetchUrl = async () => {
+    const buildFetchUrl = () => {
         const params: string[] = [];
 
         filters.forEach(filter => {
@@ -47,7 +50,12 @@ export const Reports: React.FC = (): React.ReactElement => {
             }
         });
 
-        setReportFetchUrl(`${import.meta.env.VITE_BACKEND_URL}/reports${params.length > 0 ? "?" : ""}${params.join('&')}`)
+        // Add search query if it exists
+        if (searchQuery && searchQuery.trim() !== '') {
+            params.push(`search=${encodeURIComponent(searchQuery.trim())}`);
+        }
+
+        setReportFetchUrl(`${import.meta.env.VITE_BACKEND_URL}/export${params.length > 0 ? "?" : ""}${params.join('&')}`)
     }
 
     const fetchData = async () => {
@@ -58,11 +66,10 @@ export const Reports: React.FC = (): React.ReactElement => {
         setIsLoading(true)
 
         try {
-            const response: Response = await fetch(reportFetchUrl, {
+            const response: Response = await fetchWithAuth(reportFetchUrl, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${user.token}`
                 }
             })
 
@@ -71,7 +78,8 @@ export const Reports: React.FC = (): React.ReactElement => {
             }
 
             const data: ReportsResponse = await response.json()
-            setReports(data.data)
+            setReports(data)
+            console.log(data)
         } catch (e) {
             console.error(e)
         } finally {
@@ -81,6 +89,11 @@ export const Reports: React.FC = (): React.ReactElement => {
 
     const handleRowClick = (reportId: string) => {
         navigate(`/reports/${reportId}`);
+    };
+
+    const handleSearchChange = (value: string) => {
+        setSearchQuery(value);
+        // URL rebuild and data fetch will be handled by useEffect hooks
     };
 
     const handleFilterChange = (filterTitle: string, value: string | number) => {
@@ -98,13 +111,24 @@ export const Reports: React.FC = (): React.ReactElement => {
         });
 
         setFilters(updatedFilters);
-        buildFetchUrl();
-        fetchData();
+        // URL rebuild and data fetch will be handled by useEffect hooks
     };
 
+    // Rebuild URL when filters or search query change
     useEffect(() => {
-        buildFetchUrl()
-        fetchData()
+        buildFetchUrl();
+    }, [filters, searchQuery]);
+
+    // Fetch data when URL changes
+    useEffect(() => {
+        if (reportFetchUrl) {
+            fetchData();
+        }
+    }, [reportFetchUrl]);
+
+    // Initial fetch
+    useEffect(() => {
+        buildFetchUrl();
     }, []);
 
     return(
@@ -118,32 +142,34 @@ export const Reports: React.FC = (): React.ReactElement => {
             <div className={styles.pageContent}>
                 <FiltersAndSearchBar
                     filters={filters}
-                    onSearch={fetchData}
+                    onSearch={handleSearchChange}
                     onFilterChange={handleFilterChange}
                 />
-                <table className={styles.valuesTable}>
-                    <thead>
-                        <tr>
-                            <th>Файл</th>
-                            <th>Дата</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {
-                            reports.map((item: Report, index: number) => (
-                                <tr
-                                    className={styles.valuesTableRow}
-                                    key={index}
-                                    onClick={() => handleRowClick(item.file)}
-                                    style={{ cursor: 'pointer' }}
-                                >
-                                    <td className={styles.valuesTableCell}>{item.file}</td>
-                                    <td className={styles.valuesTableCell}>{dayjs(item.date).format("DD-MM-YYYY")}</td>
-                                </tr>
-                            ))
-                        }
-                    </tbody>
-                </table>
+                <div className={styles.tableContainer}>
+                    <table className={styles.valuesTable}>
+                        <thead>
+                            <tr>
+                                <th>Файл</th>
+                                <th>Дата</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {
+                                reports.map((item: Report) => (
+                                    <tr
+                                        className={styles.valuesTableRow}
+                                        key={item.id}
+                                        onClick={() => handleRowClick(item.file)}
+                                        style={{ cursor: 'pointer' }}
+                                    >
+                                        <td className={styles.valuesTableCell}>{item.name}</td>
+                                        <td className={styles.valuesTableCell}>{dayjs(item.date).format("DD-MM-YYYY")}</td>
+                                    </tr>
+                                ))
+                            }
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     )

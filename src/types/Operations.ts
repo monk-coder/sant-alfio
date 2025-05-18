@@ -1,16 +1,18 @@
+import type {Shipment} from "./Shipments.ts";
+import type {Product} from "./Products.ts";
+
 export interface RecentOperation {
     id: number
-    type: string
-    item: unknown
+    product_id: Product
+    operation_id: Shipment
 }
 
 export interface Operation extends RecentOperation{
-    date: Date
+    operation_date: Date
 }
 
 export interface OperationDetail extends Operation {
-    table: string
-    user: unknown
-    oldValue: unknown
-    newValue: unknown
+    quantity_change: number
+    balance_after_operation: number
+    comments: string
 }

@@ -26,7 +26,7 @@ export const Logout = React.forwardRef<HTMLLinkElement, NavBarItemProps>((props,
 
 export const GoBack = React.forwardRef<HTMLLinkElement, NavBarItemProps>((props, ref) => {
     return (
-        <Link ref={ref} className={styles.navBarItem} onClick={history.back}>
+        <Link ref={ref} className={styles.navBarItem} onClick={() => (history.go(-1))}>
             <img className={styles.navBarItemIcon} src={goBackIcon} alt={"Назад"}/>
         </Link>
     )

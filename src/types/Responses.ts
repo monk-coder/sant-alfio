@@ -1,6 +1,5 @@
-import type {Product, RecentlyUpdatedProduct} from "./Products.ts";
+import type {Product, ProductDetail, RecentlyUpdatedProduct} from "./Products.ts";
 import type {RecentOperation, Operation} from "./Operations.ts";
-import type {RecentMovement} from "./Movements.ts";
 import type {Category} from "./Categories.ts";
 import type {Shipment} from "./Shipments.ts";
 import type {Report} from "./Reports.ts";
@@ -9,42 +8,23 @@ export interface RestockNumberResponse {
     value: number;
 }
 
-export interface RecentlyUpdatedGoodsResponse {
-    data: RecentlyUpdatedProduct[]
-}
+export type RecentlyUpdatedGoodsResponse = RecentlyUpdatedProduct[]
 
-export interface RecentOperationsResponse {
-    data: RecentOperation[]
-}
+export type RecentOperationsResponse = RecentOperation[]
 
-export interface RecentMovementsResponse {
-    data: RecentMovement[]
-}
+export type CategoriesResponse = Category[]
 
-export interface CategoriesResponse {
-    data: Category[]
-}
+export type LeftCountResponse = number[]
 
-export interface LeftCountResponse {
-    data: number[]
-}
+export type ProductsResponse = Product[]
 
-export interface ProductsResponse {
-    data: Product[]
-}
+export type ProductsDetailResponse = ProductDetail[]
 
-export interface ShipmentTypesResponse {
-    data: string[]
-}
+export type ShipmentTypesResponse = string[]
 
-export interface ShipmentsResponse {
-    data: Shipment[]
-}
+export type ShipmentsResponse = Shipment[]
 
-export interface ReportsResponse {
-    data: Report[]
-}
+export type ReportsResponse = Report[]
 
-export interface OperationsResponse {
-    data: Operation[]
-}
+export type OperationsResponse = Operation[]
+

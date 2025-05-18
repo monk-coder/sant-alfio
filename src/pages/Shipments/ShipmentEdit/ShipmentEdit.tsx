@@ -8,13 +8,15 @@ import {TextInput} from "@ui/inputs/TextInput.tsx";
 import {SubmitButton} from "@ui/buttons/SubmitButton.tsx";
 import type {ShipmentTypesResponse, ProductsResponse} from "@types/Responses.ts";
 import Loader from "@components/UI/loader";
-import type {Shipment} from "@types/Shipments.ts";
 import type {FilterOption} from "@types/Filters.ts";
 import dayjs from "dayjs";
+import {useApi} from "@utils/api.ts";
 
 export const ShipmentEdit: React.FC = (): React.ReactElement => {
-    const {user, isLoading, setIsLoading} = useContext(AuthContext) as AuthContextType;
+    const {isLoading, setIsLoading} = useContext(AuthContext) as AuthContextType;
     const {id} = useParams<{id: string}>();
+
+    const { fetchWithAuth } = useApi();
 
     const [shipmentTypes, setShipmentTypes] = useState<FilterOption[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
@@ -29,11 +31,10 @@ export const ShipmentEdit: React.FC = (): React.ReactElement => {
     const fetchShipment = async () => {
         setIsLoading(true);
         try {
-            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/shipments/${id}`, {
+            const response = await fetchWithAuth(`${import.meta.env.VITE_BACKEND_URL}/shipments/${id}`, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${user.token}`
                 }
             });
 
@@ -72,11 +73,10 @@ export const ShipmentEdit: React.FC = (): React.ReactElement => {
         };
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/shipments/${id}`, {
+            const response = await fetchWithAuth(`${import.meta.env.VITE_BACKEND_URL}/shipments/${id}`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${user.token}`
                 },
                 body: JSON.stringify(shipmentData)
             });
@@ -93,11 +93,10 @@ export const ShipmentEdit: React.FC = (): React.ReactElement => {
 
     const fetchShipmentTypes = async () => {
         try {
-            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/shipment-types`, {
+            const response = await fetchWithAuth(`${import.meta.env.VITE_BACKEND_URL}/shipment-types`, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${user.token}`
                 }
             });
 
@@ -119,11 +118,10 @@ export const ShipmentEdit: React.FC = (): React.ReactElement => {
 
     const fetchProducts = async () => {
         try {
-            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/products`, {
+            const response = await fetchWithAuth(`${import.meta.env.VITE_BACKEND_URL}/products`, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${user.token}`
                 }
             });
 
