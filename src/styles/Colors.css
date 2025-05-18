@@ -1,0 +1,7 @@
+:root {
+  --color-black: #000000;
+  --color-white: #ffffff;
+  --color-dark-gray: #171717;
+  --color-accent: #ff5b00;
+  --color-accent-light: rgba(255, 91, 0, 0.1);
+}

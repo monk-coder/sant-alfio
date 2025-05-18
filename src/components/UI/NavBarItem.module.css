@@ -1,0 +1,22 @@
+.navBarItem {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 2vw;
+  min-width: 32px;
+  height: auto;
+  aspect-ratio: 1;
+  margin: 0;
+  text-decoration: none;
+}
+
+.navBarItemIcon, .navBarItemIconSelected {
+  width: 4vw;
+  min-width: 50px;
+  height: auto;
+  aspect-ratio: initial;
+}
+
+.navBarItemIconSelected {
+  border: 1px solid var(--color-black);
+}

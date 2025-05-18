@@ -1,0 +1,20 @@
+.submitButton {
+  width: 100%;
+  padding: 16px;
+  font-size: 1.25em;
+  color: var(--color-accent);
+  border: none;
+  appearance: none;
+  background: var(--color-white);
+  text-align: center;
+  outline: none;
+  cursor: pointer;
+}
+
+.submitButton:hover {
+  background: var(--color-accent-light);
+}
+
+.submitButton:active {
+  background: var(--color-accent);
+}

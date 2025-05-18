@@ -1,0 +1,99 @@
+.dashboardPage {
+  display: flex;
+  flex-direction: row;
+  justify-content: stretch;
+  align-items: stretch;
+  margin: 0;
+  padding: 0;
+  max-height: 100vh;
+  max-width: 100vw;
+  overflow: hidden;
+}
+
+.dashboard {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2vw;
+  padding: 2vw;
+}
+
+.restockNumberContainer {
+  grid-column: 1 / 2;
+  grid-row: 1 / 2;
+  border: 1px solid var(--color-black);
+  text-align: center;
+  height: 45vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.restockNumber {
+  font-size: 6em;
+  font-weight: 300;
+  margin: 0;
+}
+
+.restockNumberText {
+  font-size: 1em;
+  margin: 1vh 0;
+}
+
+.dashboardContainer {
+  border: 1px solid var(--color-black);
+  height: 45vh;
+}
+
+.dashboardItemTitle{
+  font-size: 1.5em;
+  margin: 3vh 0;
+  text-align: center;
+}
+
+.tableContainer {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  height: 80%;
+  overflow-y: auto;
+}
+
+.dashboardTable {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: center;
+}
+
+.dashboardTable th {
+  padding: 8px;
+  border-bottom: 1px solid var(--color-black);
+  border-top: 1px solid var(--color-black);
+  font-weight: bold;
+}
+
+.dashboardTableRow {
+  border-bottom: 1px solid var(--color-black);
+}
+
+.dashboardTableRow:last-child {
+  border-bottom: none;
+}
+
+.dashboardTableCell {
+  padding: 8px;
+}
+
+.loaderContainer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.7);
+  z-index: 1000;
+}

@@ -1,0 +1,56 @@
+.reportsPage {
+  display: flex;
+  flex-direction: row;
+  justify-content: stretch;
+  align-items: stretch;
+  margin: 0;
+  padding: 0;
+  max-height: 100vh;
+  max-width: 100vw;
+  overflow: hidden;
+}
+
+.pageContent {
+  width: 100%;
+  height: 100%;
+}
+
+.valuesTable {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: center;
+}
+
+.valuesTable th {
+  padding: 8px;
+  border-bottom: 1px solid var(--color-black);
+  border-right: 1px solid var(--color-black);
+  font-weight: bold;
+}
+
+.valuesTableRow {
+  border-bottom: 1px solid var(--color-black);
+  border-right: 1px solid var(--color-black);
+}
+
+.valuesTableCell {
+  padding: 8px;
+  border-right: 1px solid var(--color-black);
+}
+
+.valuesTableCell:last-child {
+  border-right: none;
+}
+
+.loaderContainer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.7);
+  z-index: 1000;
+}
